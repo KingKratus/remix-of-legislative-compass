@@ -47,6 +47,18 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        governo: {
+          DEFAULT: "hsl(var(--governo))",
+          foreground: "hsl(var(--governo-foreground))",
+        },
+        oposicao: {
+          DEFAULT: "hsl(var(--oposicao))",
+          foreground: "hsl(var(--oposicao-foreground))",
+        },
+        centro: {
+          DEFAULT: "hsl(var(--centro))",
+          foreground: "hsl(var(--centro-foreground))",
+        },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
           foreground: "hsl(var(--sidebar-foreground))",
