@@ -1,4 +1,5 @@
 import { ChevronRight } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import type { Deputado } from "@/hooks/useDeputados";
 import type { Tables } from "@/integrations/supabase/types";
@@ -32,9 +33,19 @@ const classBadgeColors: Record<string, string> = {
 };
 
 export function DeputyCard({ deputado, analise, onClick }: DeputyCardProps) {
+  const navigate = useNavigate();
+
+  const handleClick = () => {
+    if (onClick) {
+      onClick();
+    } else {
+      navigate(`/deputado/${deputado.id}?ano=${analise?.ano || 2025}`);
+    }
+  };
+
   return (
     <Card
-      onClick={onClick}
+      onClick={handleClick}
       className={`p-4 border-2 cursor-pointer transition-all hover:scale-[1.02] hover:shadow-lg group ${
         analise ? classColors[analise.classificacao] || "border-border" : "border-border"
       }`}
