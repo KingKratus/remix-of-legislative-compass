@@ -17,6 +17,7 @@ export function useDeputyVotes(deputadoId: number, ano: number) {
   const [error, setError] = useState<string | null>(null);
 
   const fetchVotes = useCallback(async () => {
+    if (!deputadoId) return;
     setLoading(true);
     setError(null);
     try {
