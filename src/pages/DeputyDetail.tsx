@@ -13,6 +13,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { useDeputyVotes } from "@/hooks/useDeputyVotes";
+import { AlignmentChart } from "@/components/AlignmentChart";
 import { supabase } from "@/integrations/supabase/client";
 import { useState } from "react";
 import type { Tables } from "@/integrations/supabase/types";
@@ -145,6 +146,9 @@ export default function DeputyDetail() {
             </div>
           </Card>
         )}
+
+        {/* Alignment Evolution Chart */}
+        {votes.length >= 2 && <AlignmentChart votes={votes} />}
 
         {/* Vote History */}
         <div className="flex items-center justify-between">
