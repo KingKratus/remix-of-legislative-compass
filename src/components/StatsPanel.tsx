@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import type { Tables } from "@/integrations/supabase/types";
+import type { SyncProgress } from "@/hooks/useAnalises";
 
 type Analise = Tables<"analises_deputados">;
 
@@ -18,6 +19,7 @@ interface StatsPanelProps {
   analises: Analise[];
   totalDeputados: number;
   syncing: boolean;
+  syncProgress: SyncProgress | null;
   onSync: () => void;
 }
 
@@ -49,6 +51,7 @@ export function StatsPanel({
   analises,
   totalDeputados,
   syncing,
+  syncProgress,
   onSync,
 }: StatsPanelProps) {
   const counts = { Governo: 0, Centro: 0, Oposição: 0, "Sem Dados": 0 };
@@ -117,9 +120,16 @@ export function StatsPanel({
             ) : (
               <BarChart2 className="mr-2" size={14} />
             )}
-            {syncing ? "Sincronizando..." : "Sincronizar via Backend"}
+            {syncing
+              ? syncProgress
+                ? `Processando ${syncProgress.processed}/${syncProgress.total} votações (${syncProgress.percent}%)`
+                : "Iniciando..."
+              : "Sincronizar via Backend"}
           </Button>
-          <p className="text-[9px] text-center text-muted-foreground font-bold uppercase">
+          {syncing && syncProgress && syncProgress.total > 0 && (
+            <Progress value={syncProgress.percent} className="h-1.5 mt-2" />
+          )}
+          <p className="text-[9px] text-center text-muted-foreground font-bold uppercase mt-1">
             Busca votações → orientações do governo → votos dos deputados
           </p>
         </CardContent>

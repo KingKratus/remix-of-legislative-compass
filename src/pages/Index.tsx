@@ -30,6 +30,7 @@ const Index = () => {
     analises,
     loading: analLoading,
     syncing,
+    syncProgress,
     error,
     syncDeputados,
     refetch,
@@ -84,7 +85,8 @@ const Index = () => {
             analises={analises}
             totalDeputados={deputados.length}
             syncing={syncing}
-            onSync={() => syncDeputados(50)}
+            syncProgress={syncProgress}
+            onSync={() => syncDeputados(30)}
           />
           {user && (
             <Button
