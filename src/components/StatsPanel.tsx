@@ -120,7 +120,7 @@ export function StatsPanel({
             {syncing ? "Sincronizando..." : "Sincronizar via Backend"}
           </Button>
           <p className="text-[9px] text-center text-muted-foreground font-bold uppercase">
-            Busca orientações do líder do governo pela edge function
+            Busca votações → orientações do governo → votos dos deputados
           </p>
         </CardContent>
       </Card>
