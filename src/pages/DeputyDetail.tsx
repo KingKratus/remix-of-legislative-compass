@@ -30,8 +30,8 @@ export default function DeputyDetail() {
   const { id } = useParams<{ id: string }>();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const deputadoId = Number(id);
-  const ano = Number(searchParams.get("ano") || 2025);
+  const deputadoId = Number(id) || 0;
+  const ano = Number(searchParams.get("ano")) || 2025;
 
   const [analise, setAnalise] = useState<Analise | null>(null);
   const [loadingAnalise, setLoadingAnalise] = useState(true);
@@ -40,6 +40,7 @@ export default function DeputyDetail() {
 
   useEffect(() => {
     async function load() {
+      if (!deputadoId) return;
       setLoadingAnalise(true);
       const { data } = await supabase
         .from("analises_deputados")
