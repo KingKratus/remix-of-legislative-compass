@@ -31,7 +31,7 @@ export function useAnalises(ano: number) {
   }, [fetchAnalises]);
 
   const syncDeputados = useCallback(
-    async (limit = 50) => {
+    async (limit = 100) => {
       setSyncing(true);
       setError(null);
       try {
@@ -40,6 +40,7 @@ export function useAnalises(ano: number) {
           { body: { ano, limit } }
         );
         if (err) throw err;
+        if (data?.error) throw new Error(data.error);
         await fetchAnalises();
         return data;
       } catch (e: any) {
@@ -52,22 +53,5 @@ export function useAnalises(ano: number) {
     [ano, fetchAnalises]
   );
 
-  const syncSingleDeputy = useCallback(
-    async (deputadoId: number) => {
-      try {
-        const { data, error: err } = await supabase.functions.invoke(
-          "sync-camara",
-          { body: { ano, deputado_id: deputadoId, limit: 30 } }
-        );
-        if (err) throw err;
-        await fetchAnalises();
-        return data;
-      } catch {
-        return null;
-      }
-    },
-    [ano, fetchAnalises]
-  );
-
-  return { analises, loading, syncing, error, syncDeputados, syncSingleDeputy, refetch: fetchAnalises };
+  return { analises, loading, syncing, error, syncDeputados, refetch: fetchAnalises };
 }
