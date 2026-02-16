@@ -39,7 +39,33 @@ Deno.serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+
+    // ── AUTH: require admin role ──
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return jsonResponse({ error: "Unauthorized" }, 401);
+    }
+
+    const authClient = createClient(supabaseUrl, anonKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
+    const token = authHeader.replace("Bearer ", "");
+    const { data: claimsData, error: claimsError } = await authClient.auth.getClaims(token);
+    if (claimsError || !claimsData?.claims) {
+      return jsonResponse({ error: "Unauthorized" }, 401);
+    }
+    const userId = claimsData.claims.sub;
+
+    // Check admin role
     const supabase = createClient(supabaseUrl, supabaseKey);
+    const { data: isAdmin } = await supabase.rpc("has_role", {
+      _user_id: userId,
+      _role: "admin",
+    });
+    if (!isAdmin) {
+      return jsonResponse({ error: "Forbidden - admin access required" }, 403);
+    }
 
     const body = await req.json();
     const year: number = body.ano || new Date().getFullYear();

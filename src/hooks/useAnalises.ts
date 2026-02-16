@@ -48,10 +48,20 @@ export function useAnalises(ano: number) {
         let batchStart = 0;
         let done = false;
 
+        const { data: sessionData } = await supabase.auth.getSession();
+        if (!sessionData.session) {
+          throw new Error("Autenticação necessária para sincronizar.");
+        }
+
         while (!done) {
           const { data, error: err } = await supabase.functions.invoke(
             "sync-camara",
-            { body: { ano, batch_start: batchStart, batch_size: batchSize } }
+            {
+              body: { ano, batch_start: batchStart, batch_size: batchSize },
+              headers: {
+                Authorization: `Bearer ${sessionData.session.access_token}`,
+              },
+            }
           );
 
           if (err) throw err;
