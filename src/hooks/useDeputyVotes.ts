@@ -21,8 +21,15 @@ export function useDeputyVotes(deputadoId: number, ano: number) {
     setLoading(true);
     setError(null);
     try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData.session) {
+        throw new Error("Autenticação necessária.");
+      }
       const { data, error: err } = await supabase.functions.invoke("deputy-votes", {
         body: { deputado_id: deputadoId, ano, limit: 60 },
+        headers: {
+          Authorization: `Bearer ${sessionData.session.access_token}`,
+        },
       });
       if (err) throw err;
       if (data?.error) throw new Error(data.error);
