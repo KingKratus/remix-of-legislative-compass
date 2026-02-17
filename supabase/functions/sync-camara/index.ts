@@ -72,6 +72,18 @@ Deno.serve(async (req) => {
     const batchStart: number = body.batch_start || 0;
     const batchSize: number = body.batch_size || 30;
 
+    // ── INPUT VALIDATION ──
+    const currentYear = new Date().getFullYear();
+    if (typeof year !== "number" || year < 2000 || year > currentYear + 1) {
+      return jsonResponse({ error: "Invalid year" }, 400);
+    }
+    if (typeof batchStart !== "number" || batchStart < 0) {
+      return jsonResponse({ error: "Invalid batch_start" }, 400);
+    }
+    if (typeof batchSize !== "number" || batchSize < 1 || batchSize > 50) {
+      return jsonResponse({ error: "Invalid batch_size" }, 400);
+    }
+
     console.log(`Sync year=${year} batch_start=${batchStart} batch_size=${batchSize}`);
 
     // ── STEP 1: Fetch orientações from bulk file (small ~3MB) ──
@@ -270,8 +282,8 @@ Deno.serve(async (req) => {
       next_batch_start: done ? null : nextStart,
     });
   } catch (error) {
-    console.error("Fatal error:", error.message, error.stack);
-    return jsonResponse({ error: error.message }, 500);
+    console.error("Fatal error during sync:", error.message, error.stack);
+    return jsonResponse({ error: "Synchronization failed" }, 500);
   }
 });
 

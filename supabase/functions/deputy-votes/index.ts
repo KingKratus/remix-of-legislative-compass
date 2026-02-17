@@ -31,6 +31,29 @@ Deno.serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+
+    // ── AUTH: require authenticated user ──
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(
+        JSON.stringify({ error: "Unauthorized" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const authClient = createClient(supabaseUrl, anonKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
+    const token = authHeader.replace("Bearer ", "");
+    const { data: claimsData, error: claimsError } = await authClient.auth.getClaims(token);
+    if (claimsError || !claimsData?.claims) {
+      return new Response(
+        JSON.stringify({ error: "Unauthorized" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     const body = await req.json();
@@ -38,9 +61,23 @@ Deno.serve(async (req) => {
     const year: number = body.ano || 2025;
     const limit: number = body.limit || 60;
 
-    if (!deputadoId) {
+    // ── INPUT VALIDATION ──
+    const currentYear = new Date().getFullYear();
+    if (!deputadoId || typeof deputadoId !== "number" || deputadoId <= 0 || !Number.isInteger(deputadoId)) {
       return new Response(
-        JSON.stringify({ error: "deputado_id is required" }),
+        JSON.stringify({ error: "Invalid deputado_id" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    if (typeof year !== "number" || year < 2000 || year > currentYear + 1) {
+      return new Response(
+        JSON.stringify({ error: "Invalid year" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    if (typeof limit !== "number" || limit < 1 || limit > 100) {
+      return new Response(
+        JSON.stringify({ error: "Invalid limit" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -126,9 +163,9 @@ Deno.serve(async (req) => {
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
-    console.error("Error:", error.message);
+    console.error("Error fetching deputy votes:", error.message, error.stack);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: "Failed to fetch deputy voting history" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
