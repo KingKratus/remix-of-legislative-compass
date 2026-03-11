@@ -1,6 +1,7 @@
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, Star } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import type { Deputado } from "@/hooks/useDeputados";
 import type { Tables } from "@/integrations/supabase/types";
 
@@ -10,6 +11,8 @@ interface DeputyCardProps {
   deputado: Deputado;
   analise?: Analise;
   onClick?: () => void;
+  isFavorite?: boolean;
+  onToggleFavorite?: (id: number) => void;
 }
 
 const classColors: Record<string, string> = {
@@ -32,7 +35,7 @@ const classBadgeColors: Record<string, string> = {
   Oposição: "bg-oposicao",
 };
 
-export function DeputyCard({ deputado, analise, onClick }: DeputyCardProps) {
+export function DeputyCard({ deputado, analise, onClick, isFavorite, onToggleFavorite }: DeputyCardProps) {
   const navigate = useNavigate();
 
   const handleClick = () => {
@@ -85,6 +88,23 @@ export function DeputyCard({ deputado, analise, onClick }: DeputyCardProps) {
             </span>
           </div>
         </div>
+
+        {onToggleFavorite && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="shrink-0 h-8 w-8"
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggleFavorite(deputado.id);
+            }}
+          >
+            <Star
+              size={14}
+              className={isFavorite ? "fill-primary text-primary" : "text-muted-foreground"}
+            />
+          </Button>
+        )}
 
         <ChevronRight
           size={18}
