@@ -1,90 +1,104 @@
 
 
-# Monitor Legislativo — Plano de Implementação
+## Plano: Sync completo, Perfil com favoritos, Insights de tendências e Mapa por UF
 
-## Visão Geral
-Um webapp de transparência legislativa que analisa o alinhamento dos deputados federais com a orientação do líder do governo, com backend Supabase para cache, autenticação e histórico.
+### Diagnóstico atual
 
----
-
-## 1. Backend Supabase (Lovable Cloud)
-
-### Banco de Dados
-- **Tabela `votacoes`**: Cache das votações buscadas da API da Câmara (id_votacao, data, descrição, ano)
-- **Tabela `orientacoes`**: Orientação do líder do governo por votação (evita re-buscar da API)
-- **Tabela `analises_deputados`**: Score de alinhamento calculado por deputado por ano (deputado_id, ano, score, total_votos, classificação)
-- **Tabela `profiles`**: Perfil dos usuários logados (nome, avatar, favoritos)
-- **Tabela `user_roles`**: Roles de acesso dos usuários
-
-### Edge Function: Sincronização com API da Câmara
-- Uma edge function que busca votações e orientações da API da Câmara e salva no Supabase
-- Resolve o problema de rate limit (429) centralizando as chamadas no servidor
-- Sempre prioriza buscar a orientação do **líder do governo** (GOV./GOVERNO/LIDGOV)
-- Aceita parâmetro de **ano** para filtrar o período de busca
-
-### Autenticação
-- Login com Google via Supabase Auth
-- Usuários logados podem salvar deputados favoritos e acessar exportação
+**Bugs identificados:**
+1. **Navbar ANOS** = `[2024, 2025, 2026]` -- falta 2023
+2. **auto-sync nunca executou** -- zero logs. O cron job está configurado mas usa `anon key` no header; a função não requer auth, então deve funcionar na próxima execução às 03:00 UTC
+3. **Dados no banco**: 2024 (543), 2025 (551), 2026 (512) -- 2023 está vazio
+4. **Página de perfil não existe** -- a tabela `profiles` já tem coluna `favoritos` (integer[]) mas não há UI
+5. **Nenhuma aba de Insights/Tendências** no frontend
 
 ---
 
-## 2. Página Principal — Dashboard
+### 1. Corrigir e testar auto-sync (2023-2026)
 
-### Barra Superior
-- Logo e título "Monitor Legislativo"
-- Busca por nome de deputado
-- Filtro por partido (dropdown)
-- **Filtro por ano** (2024, 2025, 2026) — altera o período de consulta
-- **Filtro por classificação**: Governo / Centro / Oposição / Todos
-- Botão de login com Google
+- Atualizar `auto-sync` para processar anos `[2023, 2024, 2025, 2026]` (já faz isso, mas confirmar)
+- Deploiar e invocar manualmente via `curl_edge_functions` para validar
+- Corrigir Navbar: ANOS = `[2023, 2024, 2025, 2026]`
 
-### Painel Lateral (Estatísticas)
-- Contadores: Governo, Centro, Oposição, Por Analisar
-- Barra de progresso da análise
-- Botão "Analisar Filtro Atual"
-- Card de Metodologia (critérios de classificação)
+### 2. Log de progresso do sync (seguro)
 
-### Grid de Deputados
-- Cards com foto, nome, partido, UF e score de alinhamento
-- Cores por classificação (verde/governo, azul/centro, vermelho/oposição)
-- Indicador de loading individual por card durante análise
-- Clique abre página de detalhes
+Criar uma tabela `sync_logs` para registrar o progresso:
+- Colunas: `id`, `ano`, `status` (running/done/error), `votacoes_processadas`, `deputados_atualizados`, `started_at`, `finished_at`, `message`
+- RLS: SELECT público (read-only), INSERT/UPDATE bloqueado (apenas service role)
+- O auto-sync e sync-camara gravam progresso nessa tabela
+- Frontend: componente `SyncLogPanel` no sidebar que mostra últimas execuções com timestamps -- sem expor detalhes técnicos internos (sem stack traces, sem IDs de votação)
 
----
+### 3. Filtro geográfico por UF com regiões do Brasil
 
-## 3. Ranking de Alinhamento
-- Lista ordenada dos deputados mais e menos alinhados com o governo
-- Filtro por ano e partido
-- Top 10 mais alinhados e top 10 mais oposicionistas em destaque
+Em vez de GeoJSON pesado (mapa SVG/Canvas), usar agrupamento por **região geográfica** (Norte, Nordeste, Centro-Oeste, Sudeste, Sul) derivado da UF:
+- Adicionar filtro de região no Navbar (Select com as 5 regiões)
+- Mapping estático UF -> Região (ex: SP -> Sudeste, BA -> Nordeste)
+- Filtrar deputados pela região selecionada
+- Na aba Partidos, mostrar breakdown por região
 
----
+### 4. Aba Perfil com favoritos
 
-## 4. Gráficos por Partido
-- Gráfico de barras com alinhamento médio de cada partido com o governo
-- Comparação visual entre partidos usando Recharts
-- Filtro por ano para ver evolução
+- Nova rota `/perfil`
+- Hook `useProfile` para carregar/atualizar favoritos via tabela `profiles`
+- Botão de favoritar (estrela) no `DeputyCard` e `DeputyDetail`
+- Página de perfil mostra: avatar Google, nome, lista de deputados favoritados com seus scores
+- Link no Navbar (ícone de usuário quando logado)
 
----
+### 5. Aba Insights / Tendências
 
-## 5. Página de Detalhes do Deputado
-- Foto, nome completo, partido, UF
-- Score de alinhamento com barra visual
-- Lista das votações analisadas mostrando: voto do deputado vs. orientação do líder do governo
-- Classificação geral (Governo/Centro/Oposição)
+Nova aba "Insights" na página principal com:
 
----
+**a) Tendência por classificação (Centro → para onde está indo)**
+- Comparar scores entre anos disponíveis (2023 vs 2024 vs 2025 vs 2026)
+- Para deputados classificados como "Centro", calcular se o score está subindo (→ Governo) ou descendo (→ Oposição)
+- Mostrar com setas e badges: "Centro → tendência Governo" ou "Centro → tendência Oposição"
 
-## 6. Exportação de Dados
-- Botão para exportar ranking e análises em CSV
-- Disponível para usuários logados
-- Inclui nome, partido, UF, score, classificação, total de votos
+**b) Movimentação da base**
+- Gráfico de barras empilhadas mostrando quantos deputados migraram de classificação entre anos
+- Ex: "23 deputados saíram de Centro para Governo em 2025"
+
+**c) Score médio por ano**
+- Line chart com a evolução do score médio geral por ano
 
 ---
 
-## 7. Design e UX
-- Design moderno com Tailwind CSS, cards arredondados, sombras sutis
-- Paleta: indigo como cor primária, emerald para governo, rose para oposição
-- Responsivo (mobile e desktop)
-- Modo claro (como no código original)
-- Feedback visual durante processamento (spinners por card e global)
+### Detalhes técnicos
+
+**Database migration:**
+```sql
+CREATE TABLE public.sync_logs (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  ano integer NOT NULL,
+  status text NOT NULL DEFAULT 'running',
+  votacoes_processadas integer DEFAULT 0,
+  deputados_atualizados integer DEFAULT 0,
+  started_at timestamptz DEFAULT now(),
+  finished_at timestamptz,
+  message text
+);
+ALTER TABLE public.sync_logs ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Sync logs publicly readable" ON public.sync_logs FOR SELECT USING (true);
+CREATE POLICY "No public insert" ON public.sync_logs FOR INSERT WITH CHECK (false);
+CREATE POLICY "No public update" ON public.sync_logs FOR UPDATE USING (false);
+```
+
+**Novos arquivos:**
+- `src/pages/Profile.tsx` -- página de perfil + favoritos
+- `src/hooks/useProfile.ts` -- CRUD favoritos
+- `src/hooks/useSyncLogs.ts` -- leitura dos logs de sync
+- `src/components/InsightsPanel.tsx` -- aba de tendências com charts
+- `src/components/SyncLogPanel.tsx` -- painel de logs no sidebar
+- `src/lib/regioesUf.ts` -- mapping UF → região
+
+**Arquivos editados:**
+- `src/App.tsx` -- adicionar rota `/perfil`
+- `src/components/Navbar.tsx` -- ANOS=[2023-2026], filtro região, link perfil
+- `src/pages/Index.tsx` -- aba Insights, filtro região, botão favoritar
+- `src/components/DeputyCard.tsx` -- botão favoritar
+- `supabase/functions/auto-sync/index.ts` -- gravar em sync_logs
+- `supabase/functions/sync-camara/index.ts` -- gravar em sync_logs
+
+**Segurança do log:**
+- Logs mostram apenas: ano, status, contagens numéricas, timestamps
+- Sem IPs, tokens, stack traces, ou IDs de votação no frontend
+- Tabela protegida por RLS (read-only público, write apenas service role)
 
