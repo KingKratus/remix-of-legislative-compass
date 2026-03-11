@@ -124,6 +124,39 @@ export type Database = {
         }
         Relationships: []
       }
+      sync_logs: {
+        Row: {
+          ano: number
+          deputados_atualizados: number | null
+          finished_at: string | null
+          id: string
+          message: string | null
+          started_at: string | null
+          status: string
+          votacoes_processadas: number | null
+        }
+        Insert: {
+          ano: number
+          deputados_atualizados?: number | null
+          finished_at?: string | null
+          id?: string
+          message?: string | null
+          started_at?: string | null
+          status?: string
+          votacoes_processadas?: number | null
+        }
+        Update: {
+          ano?: number
+          deputados_atualizados?: number | null
+          finished_at?: string | null
+          id?: string
+          message?: string | null
+          started_at?: string | null
+          status?: string
+          votacoes_processadas?: number | null
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           id: string
