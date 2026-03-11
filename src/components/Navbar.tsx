@@ -1,4 +1,5 @@
-import { ShieldCheck, Search, RefreshCcw, LogIn, LogOut, User } from "lucide-react";
+import { ShieldCheck, Search, RefreshCcw, LogIn, LogOut, User, MapPin } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -9,6 +10,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { Partido } from "@/hooks/useDeputados";
+import { REGIOES } from "@/lib/regioesUf";
 
 interface NavbarProps {
   searchTerm: string;
@@ -19,6 +21,8 @@ interface NavbarProps {
   onAnoChange: (v: number) => void;
   classFilter: string;
   onClassFilterChange: (v: string) => void;
+  regionFilter: string;
+  onRegionFilterChange: (v: string) => void;
   partidos: Partido[];
   loading: boolean;
   onRefresh: () => void;
@@ -27,7 +31,7 @@ interface NavbarProps {
   onSignOut: () => void;
 }
 
-const ANOS = [2024, 2025, 2026];
+const ANOS = [2023, 2024, 2025, 2026];
 const CLASSES = [
   { value: "", label: "Todos" },
   { value: "Governo", label: "Governo" },
@@ -45,6 +49,8 @@ export function Navbar({
   onAnoChange,
   classFilter,
   onClassFilterChange,
+  regionFilter,
+  onRegionFilterChange,
   partidos,
   loading,
   onRefresh,
@@ -52,6 +58,8 @@ export function Navbar({
   onSignIn,
   onSignOut,
 }: NavbarProps) {
+  const navigate = useNavigate();
+
   return (
     <nav className="bg-card border-b border-border sticky top-0 z-50 px-4 py-3 shadow-sm">
       <div className="max-w-7xl mx-auto flex flex-col lg:flex-row items-center justify-between gap-4">
@@ -120,15 +128,34 @@ export function Navbar({
             </SelectContent>
           </Select>
 
+          <Select value={regionFilter} onValueChange={onRegionFilterChange}>
+            <SelectTrigger className="w-32">
+              <SelectValue placeholder="Região" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todas</SelectItem>
+              {REGIOES.map((r) => (
+                <SelectItem key={r} value={r}>
+                  {r}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
           <Button variant="outline" size="icon" onClick={onRefresh} title="Recarregar">
             <RefreshCcw size={16} className={loading ? "animate-spin" : ""} />
           </Button>
 
           {user ? (
-            <Button variant="ghost" size="sm" onClick={onSignOut} className="gap-2">
-              <User size={16} />
-              <span className="hidden sm:inline text-xs">Sair</span>
-            </Button>
+            <div className="flex items-center gap-1">
+              <Button variant="ghost" size="icon" onClick={() => navigate("/perfil")} title="Perfil">
+                <User size={16} />
+              </Button>
+              <Button variant="ghost" size="sm" onClick={onSignOut} className="gap-1">
+                <LogOut size={14} />
+                <span className="hidden sm:inline text-xs">Sair</span>
+              </Button>
+            </div>
           ) : (
             <Button variant="outline" size="sm" onClick={onSignIn} className="gap-2">
               <LogIn size={16} />

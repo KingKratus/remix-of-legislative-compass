@@ -6,24 +6,30 @@ import {
   Download,
   BarChart2,
   Trophy,
+  TrendingUp,
 } from "lucide-react";
 import { Navbar } from "@/components/Navbar";
 import { StatsPanel } from "@/components/StatsPanel";
 import { DeputyCard } from "@/components/DeputyCard";
 import { RankingTable } from "@/components/RankingTable";
 import { PartyChart } from "@/components/PartyChart";
+import { InsightsPanel } from "@/components/InsightsPanel";
+import { SyncLogPanel } from "@/components/SyncLogPanel";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useDeputados } from "@/hooks/useDeputados";
 import { useAnalises } from "@/hooks/useAnalises";
 import { useAuth } from "@/hooks/useAuth";
+import { useProfile } from "@/hooks/useProfile";
 import { exportAnalisesCsv } from "@/lib/exportCsv";
+import { getRegiao } from "@/lib/regioesUf";
 
 const Index = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [partyFilter, setPartyFilter] = useState("all");
   const [ano, setAno] = useState(2025);
   const [classFilter, setClassFilter] = useState("all");
+  const [regionFilter, setRegionFilter] = useState("all");
 
   const { deputados, partidos, loading: depLoading } = useDeputados();
   const {
@@ -36,28 +42,23 @@ const Index = () => {
     refetch,
   } = useAnalises(ano);
   const { user, signInWithGoogle, signOut } = useAuth();
+  const { isFavorite, toggleFavorite } = useProfile(user?.id);
 
-  // Map analysis by deputado_id for quick lookup
   const analiseMap = useMemo(() => {
     const map: Record<number, (typeof analises)[0]> = {};
-    analises.forEach((a) => {
-      map[a.deputado_id] = a;
-    });
+    analises.forEach((a) => { map[a.deputado_id] = a; });
     return map;
   }, [analises]);
 
-  // Filter deputies
   const filteredDeputies = useMemo(() => {
     return deputados.filter((d) => {
       const matchName = d.nome.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchParty = partyFilter === "all" ? true : d.siglaPartido === partyFilter;
-      const matchClass =
-        classFilter === "all"
-          ? true
-          : analiseMap[d.id]?.classificacao === classFilter;
-      return matchName && matchParty && (classFilter === "all" || matchClass);
+      const matchParty = partyFilter === "all" || d.siglaPartido === partyFilter;
+      const matchClass = classFilter === "all" || analiseMap[d.id]?.classificacao === classFilter;
+      const matchRegion = regionFilter === "all" || getRegiao(d.siglaUf) === regionFilter;
+      return matchName && matchParty && matchClass && matchRegion;
     });
-  }, [deputados, searchTerm, partyFilter, classFilter, analiseMap]);
+  }, [deputados, searchTerm, partyFilter, classFilter, regionFilter, analiseMap]);
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -70,6 +71,8 @@ const Index = () => {
         onAnoChange={setAno}
         classFilter={classFilter}
         onClassFilterChange={setClassFilter}
+        regionFilter={regionFilter}
+        onRegionFilterChange={setRegionFilter}
         partidos={partidos}
         loading={depLoading || analLoading}
         onRefresh={refetch}
@@ -79,7 +82,6 @@ const Index = () => {
       />
 
       <main className="max-w-7xl mx-auto p-4 md:p-6 grid grid-cols-1 xl:grid-cols-12 gap-6">
-        {/* Sidebar */}
         <aside className="xl:col-span-3 space-y-4">
           <StatsPanel
             analises={analises}
@@ -88,6 +90,7 @@ const Index = () => {
             syncProgress={syncProgress}
             onSync={() => syncDeputados(30)}
           />
+          <SyncLogPanel />
           {user && (
             <Button
               variant="outline"
@@ -101,7 +104,6 @@ const Index = () => {
           )}
         </aside>
 
-        {/* Main content */}
         <section className="xl:col-span-9 space-y-4">
           <Tabs defaultValue="deputados">
             <TabsList>
@@ -113,6 +115,9 @@ const Index = () => {
               </TabsTrigger>
               <TabsTrigger value="partidos" className="gap-2">
                 <BarChart2 size={14} /> Partidos
+              </TabsTrigger>
+              <TabsTrigger value="insights" className="gap-2">
+                <TrendingUp size={14} /> Insights
               </TabsTrigger>
             </TabsList>
 
@@ -140,6 +145,8 @@ const Index = () => {
                     key={dep.id}
                     deputado={dep}
                     analise={analiseMap[dep.id]}
+                    isFavorite={user ? isFavorite(dep.id) : undefined}
+                    onToggleFavorite={user ? toggleFavorite : undefined}
                   />
                 ))}
               </div>
@@ -160,6 +167,10 @@ const Index = () => {
 
             <TabsContent value="partidos" className="mt-4">
               <PartyChart analises={analises} />
+            </TabsContent>
+
+            <TabsContent value="insights" className="mt-4">
+              <InsightsPanel />
             </TabsContent>
           </Tabs>
         </section>

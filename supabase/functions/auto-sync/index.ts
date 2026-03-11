@@ -59,16 +59,20 @@ function processVotos(
 
 async function syncYear(
   supabase: any,
-  year: number
-): Promise<{ deputies: number; votacoes: number; error?: string }> {
+  year: number,
+  logId: string
+): Promise<{ deputies: number; votacoes: number }> {
   const batchSize = 30;
   console.log(`[auto-sync] Starting sync for year ${year}`);
 
-  // Step 1: Fetch orientações
   const orientUrl = `${BULK_BASE}/votacoesOrientacoes/json/votacoesOrientacoes-${year}.json`;
   const orientRes = await fetch(orientUrl);
   if (!orientRes.ok) {
     console.warn(`[auto-sync] No orientações for ${year} (${orientRes.status}), skipping`);
+    await supabase.from("sync_logs").update({
+      status: "done", finished_at: new Date().toISOString(),
+      message: `Sem orientações disponíveis (${orientRes.status})`,
+    }).eq("id", logId);
     return { deputies: 0, votacoes: 0 };
   }
 
@@ -87,7 +91,7 @@ async function syncYear(
     }
   }
 
-  // Cache orientações in DB
+  // Cache orientações
   const orientRecords = allOrientacoes.map((o: any) => ({
     id_votacao: String(o.idVotacao),
     sigla_orgao_politico: o.siglaBancada || "",
@@ -103,9 +107,15 @@ async function syncYear(
   const totalVotacoes = allVotacaoIds.length;
   console.log(`[auto-sync] Year ${year}: ${totalVotacoes} votações with gov orientation`);
 
-  if (totalVotacoes === 0) return { deputies: 0, votacoes: 0 };
+  if (totalVotacoes === 0) {
+    await supabase.from("sync_logs").update({
+      status: "done", finished_at: new Date().toISOString(),
+      votacoes_processadas: 0, deputados_atualizados: 0,
+      message: "Nenhuma votação com orientação do governo",
+    }).eq("id", logId);
+    return { deputies: 0, votacoes: 0 };
+  }
 
-  // Step 2: Process all votações in batches
   const deputyScores: Record<number, { aligned: number; relevant: number; nome: string; partido: string; uf: string; foto: string }> = {};
   let processed = 0;
 
@@ -127,8 +137,6 @@ async function syncYear(
         if (res.ok) {
           const json = await res.json();
           processVotos(json.dados || [], govOrient, deputyScores);
-        } else {
-          console.warn(`[auto-sync] Skipping ${votacaoId} (${res.status})`);
         }
 
         await sleep(350);
@@ -138,12 +146,18 @@ async function syncYear(
     }
 
     processed += batchIds.length;
-    if (processed % 90 === 0 || processed === totalVotacoes) {
-      console.log(`[auto-sync] Year ${year} progress: ${processed}/${totalVotacoes}`);
+
+    // Update progress in sync_logs every 60 votações
+    if (processed % 60 === 0 || processed === totalVotacoes) {
+      await supabase.from("sync_logs").update({
+        votacoes_processadas: processed,
+        deputados_atualizados: Object.keys(deputyScores).length,
+        message: `Processando ${processed}/${totalVotacoes}`,
+      }).eq("id", logId);
     }
   }
 
-  // Step 3: Classify and upsert
+  // Classify and upsert
   const records: any[] = [];
   for (const [depIdStr, data] of Object.entries(deputyScores)) {
     const depId = Number(depIdStr);
@@ -173,11 +187,7 @@ async function syncYear(
     const { error } = await supabase
       .from("analises_deputados")
       .upsert(chunk, { onConflict: "deputado_id,ano" });
-    if (error) {
-      console.error(`[auto-sync] Upsert error year ${year}: ${error.message}`);
-    } else {
-      upsertCount += chunk.length;
-    }
+    if (!error) upsertCount += chunk.length;
   }
 
   // Cache votação metadata
@@ -187,6 +197,15 @@ async function syncYear(
   for (let i = 0; i < votacaoRecords.length; i += 500) {
     await supabase.from("votacoes").upsert(votacaoRecords.slice(i, i + 500), { onConflict: "id_votacao" });
   }
+
+  // Final log update
+  await supabase.from("sync_logs").update({
+    status: "done",
+    finished_at: new Date().toISOString(),
+    votacoes_processadas: totalVotacoes,
+    deputados_atualizados: upsertCount,
+    message: `Concluído: ${upsertCount} deputados, ${totalVotacoes} votações`,
+  }).eq("id", logId);
 
   console.log(`[auto-sync] Year ${year} done: ${upsertCount} deputies, ${totalVotacoes} votações`);
   return { deputies: upsertCount, votacoes: totalVotacoes };
@@ -202,26 +221,37 @@ Deno.serve(async (req) => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const currentYear = new Date().getFullYear();
-    const years = [2023, 2024, 2025, currentYear].filter(
-      (y, i, arr) => arr.indexOf(y) === i // deduplicate
-    );
-
+    const years = [2023, 2024, 2025, 2026];
     console.log(`[auto-sync] Full sync starting for years: ${years.join(", ")}`);
 
     const results: Record<number, { deputies: number; votacoes: number }> = {};
 
     for (const year of years) {
+      // Create log entry for this year
+      const { data: logData } = await supabase
+        .from("sync_logs")
+        .insert({ ano: year, status: "running", message: "Iniciando sincronização..." })
+        .select("id")
+        .single();
+
+      const logId = logData?.id || "";
+
       try {
-        results[year] = await syncYear(supabase, year);
+        results[year] = await syncYear(supabase, year, logId);
       } catch (err) {
         console.error(`[auto-sync] Failed year ${year}: ${(err as Error).message}`);
         results[year] = { deputies: 0, votacoes: 0 };
+        if (logId) {
+          await supabase.from("sync_logs").update({
+            status: "error",
+            finished_at: new Date().toISOString(),
+            message: "Erro durante a sincronização",
+          }).eq("id", logId);
+        }
       }
     }
 
     console.log(`[auto-sync] All years done`, JSON.stringify(results));
-
     return jsonResponse({ done: true, years: results });
   } catch (error) {
     console.error(`[auto-sync] Fatal error: ${(error as Error).message}`);
