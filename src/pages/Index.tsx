@@ -7,6 +7,7 @@ import {
   BarChart2,
   Trophy,
   TrendingUp,
+  Map,
 } from "lucide-react";
 import { Navbar } from "@/components/Navbar";
 import { StatsPanel } from "@/components/StatsPanel";
@@ -14,6 +15,7 @@ import { DeputyCard } from "@/components/DeputyCard";
 import { RankingTable } from "@/components/RankingTable";
 import { PartyChart } from "@/components/PartyChart";
 import { InsightsPanel } from "@/components/InsightsPanel";
+import { BrazilMap } from "@/components/BrazilMap";
 import { SyncLogPanel } from "@/components/SyncLogPanel";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -27,7 +29,7 @@ import { getRegiao } from "@/lib/regioesUf";
 const Index = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [partyFilter, setPartyFilter] = useState("all");
-  const [ano, setAno] = useState(2025);
+  const [ano, setAno] = useState(new Date().getFullYear());
   const [classFilter, setClassFilter] = useState("all");
   const [regionFilter, setRegionFilter] = useState("all");
 
@@ -119,6 +121,9 @@ const Index = () => {
               <TabsTrigger value="insights" className="gap-2">
                 <TrendingUp size={14} /> Insights
               </TabsTrigger>
+              <TabsTrigger value="mapa" className="gap-2">
+                <Map size={14} /> Mapa
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="deputados" className="space-y-4 mt-4">
@@ -171,6 +176,10 @@ const Index = () => {
 
             <TabsContent value="insights" className="mt-4">
               <InsightsPanel />
+            </TabsContent>
+
+            <TabsContent value="mapa" className="mt-4">
+              <BrazilMap analises={analises} />
             </TabsContent>
           </Tabs>
         </section>

@@ -1,4 +1,5 @@
-import { ShieldCheck, Search, RefreshCcw, LogIn, LogOut, User, MapPin } from "lucide-react";
+import { ShieldCheck, Search, RefreshCcw, LogIn, LogOut, User, Moon, Sun } from "lucide-react";
+import { useTheme } from "next-themes";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -59,6 +60,7 @@ export function Navbar({
   onSignOut,
 }: NavbarProps) {
   const navigate = useNavigate();
+  const { theme, setTheme } = useTheme();
 
   return (
     <nav className="bg-card border-b border-border sticky top-0 z-50 px-4 py-3 shadow-sm">
@@ -144,6 +146,16 @@ export function Navbar({
 
           <Button variant="outline" size="icon" onClick={onRefresh} title="Recarregar">
             <RefreshCcw size={16} className={loading ? "animate-spin" : ""} />
+          </Button>
+
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+            title="Alternar tema"
+          >
+            <Sun size={16} className="rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+            <Moon size={16} className="absolute rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
           </Button>
 
           {user ? (
