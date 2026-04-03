@@ -60,6 +60,7 @@ export function Navbar({
   onSignOut,
 }: NavbarProps) {
   const navigate = useNavigate();
+  const { theme, setTheme } = useTheme();
 
   return (
     <nav className="bg-card border-b border-border sticky top-0 z-50 px-4 py-3 shadow-sm">
