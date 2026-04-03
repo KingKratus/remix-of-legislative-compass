@@ -148,6 +148,16 @@ export function Navbar({
             <RefreshCcw size={16} className={loading ? "animate-spin" : ""} />
           </Button>
 
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+            title="Alternar tema"
+          >
+            <Sun size={16} className="rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+            <Moon size={16} className="absolute rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+          </Button>
+
           {user ? (
             <div className="flex items-center gap-1">
               <Button variant="ghost" size="icon" onClick={() => navigate("/perfil")} title="Perfil">

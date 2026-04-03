@@ -27,7 +27,7 @@ import { getRegiao } from "@/lib/regioesUf";
 const Index = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [partyFilter, setPartyFilter] = useState("all");
-  const [ano, setAno] = useState(2025);
+  const [ano, setAno] = useState(new Date().getFullYear());
   const [classFilter, setClassFilter] = useState("all");
   const [regionFilter, setRegionFilter] = useState("all");
 
