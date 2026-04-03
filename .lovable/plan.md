@@ -1,90 +1,79 @@
 
 
-# Monitor Legislativo — Plano de Implementação
+## Plano: Dark Mode, Mapa SVG do Brasil, Teste E2E, e Execução do Sync
 
-## Visão Geral
-Um webapp de transparência legislativa que analisa o alinhamento dos deputados federais com a orientação do líder do governo, com backend Supabase para cache, autenticação e histórico.
+### 1. Dark Mode com Toggle no Navbar
 
----
+O projeto já tem tudo preparado: `next-themes` instalado, `darkMode: ["class"]` no Tailwind, e variáveis CSS `.dark` definidas no `index.css`. Falta apenas:
 
-## 1. Backend Supabase (Lovable Cloud)
+- **Criar `src/hooks/useTheme.ts`** (ou usar direto do `next-themes`)
+- **Envolver o App com `ThemeProvider`** em `src/App.tsx`
+- **Adicionar botão Sun/Moon no Navbar** que chama `setTheme`
 
-### Banco de Dados
-- **Tabela `votacoes`**: Cache das votações buscadas da API da Câmara (id_votacao, data, descrição, ano)
-- **Tabela `orientacoes`**: Orientação do líder do governo por votação (evita re-buscar da API)
-- **Tabela `analises_deputados`**: Score de alinhamento calculado por deputado por ano (deputado_id, ano, score, total_votos, classificação)
-- **Tabela `profiles`**: Perfil dos usuários logados (nome, avatar, favoritos)
-- **Tabela `user_roles`**: Roles de acesso dos usuários
-
-### Edge Function: Sincronização com API da Câmara
-- Uma edge function que busca votações e orientações da API da Câmara e salva no Supabase
-- Resolve o problema de rate limit (429) centralizando as chamadas no servidor
-- Sempre prioriza buscar a orientação do **líder do governo** (GOV./GOVERNO/LIDGOV)
-- Aceita parâmetro de **ano** para filtrar o período de busca
-
-### Autenticação
-- Login com Google via Supabase Auth
-- Usuários logados podem salvar deputados favoritos e acessar exportação
+**Arquivos editados:**
+- `src/App.tsx` — envolver com `<ThemeProvider attribute="class" defaultTheme="system" enableSystem>`
+- `src/components/Navbar.tsx` — adicionar toggle Moon/Sun icon button
 
 ---
 
-## 2. Página Principal — Dashboard
+### 2. Mapa SVG do Brasil por Estado
 
-### Barra Superior
-- Logo e título "Monitor Legislativo"
-- Busca por nome de deputado
-- Filtro por partido (dropdown)
-- **Filtro por ano** (2024, 2025, 2026) — altera o período de consulta
-- **Filtro por classificação**: Governo / Centro / Oposição / Todos
-- Botão de login com Google
+Criar um componente `BrazilMap` que renderiza um SVG simplificado do Brasil com os 27 estados. Cada estado será colorido com base no score médio de governismo dos deputados daquele estado.
 
-### Painel Lateral (Estatísticas)
-- Contadores: Governo, Centro, Oposição, Por Analisar
-- Barra de progresso da análise
-- Botão "Analisar Filtro Atual"
-- Card de Metodologia (critérios de classificação)
+- **Criar `src/components/BrazilMap.tsx`** — SVG inline com paths para cada UF brasileira (27 estados)
+- Cores: gradiente de vermelho (oposição) → azul (centro) → verde (governo) baseado no score médio
+- Tooltip ao hover mostrando UF, score médio, total de deputados
+- Integrar como nova aba "Mapa" na página principal ou dentro da aba "Partidos"
 
-### Grid de Deputados
-- Cards com foto, nome, partido, UF e score de alinhamento
-- Cores por classificação (verde/governo, azul/centro, vermelho/oposição)
-- Indicador de loading individual por card durante análise
-- Clique abre página de detalhes
+**Dados:** Agrupar `analises_deputados` por `deputado_uf`, calcular média do score, aplicar cor
+
+**Arquivos:**
+- Criar `src/components/BrazilMap.tsx`
+- Editar `src/pages/Index.tsx` — nova aba "Mapa" no TabsList
 
 ---
 
-## 3. Ranking de Alinhamento
-- Lista ordenada dos deputados mais e menos alinhados com o governo
-- Filtro por ano e partido
-- Top 10 mais alinhados e top 10 mais oposicionistas em destaque
+### 3. Teste E2E do Fluxo Completo
+
+Usar as ferramentas de browser para testar manualmente:
+1. Login com Google (verificar redirect e sessão)
+2. Favoritar um deputado (verificar estrela preenchida)
+3. Acessar `/perfil` (verificar favoritos listados)
+4. Verificar aba Insights (gráficos renderizando)
+
+Isso será feito na fase de implementação usando browser tools.
 
 ---
 
-## 4. Gráficos por Partido
-- Gráfico de barras com alinhamento médio de cada partido com o governo
-- Comparação visual entre partidos usando Recharts
-- Filtro por ano para ver evolução
+### 4. Executar Sync 2023-2026 e Default para Ano Atual
+
+- **Deploy** da edge function `auto-sync` e **invocar manualmente** via `curl_edge_functions`
+- **Ajustar o default do ano** em `Index.tsx`: usar `new Date().getFullYear()` em vez de `2025` hardcoded
+- O auto-sync já processa anos `[2023, 2024, 2025, 2026]`
+
+**Arquivo editado:**
+- `src/pages/Index.tsx` — `useState(new Date().getFullYear())` para o ano
 
 ---
 
-## 5. Página de Detalhes do Deputado
-- Foto, nome completo, partido, UF
-- Score de alinhamento com barra visual
-- Lista das votações analisadas mostrando: voto do deputado vs. orientação do líder do governo
-- Classificação geral (Governo/Centro/Oposição)
+### Detalhes Técnicos
 
----
+**ThemeProvider setup (App.tsx):**
+```tsx
+import { ThemeProvider } from "next-themes";
+// Envolver todo o conteúdo com <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+```
 
-## 6. Exportação de Dados
-- Botão para exportar ranking e análises em CSV
-- Disponível para usuários logados
-- Inclui nome, partido, UF, score, classificação, total de votos
+**Toggle no Navbar:**
+```tsx
+import { useTheme } from "next-themes";
+import { Moon, Sun } from "lucide-react";
+// Botão que alterna entre "light" e "dark"
+```
 
----
+**BrazilMap:** SVG com 27 `<path>` elements, cada um com `data-uf` e cor dinâmica. Tooltip com `useState` para hover state. Paths dos estados serão baseados em coordenadas simplificadas do mapa brasileiro.
 
-## 7. Design e UX
-- Design moderno com Tailwind CSS, cards arredondados, sombras sutis
-- Paleta: indigo como cor primária, emerald para governo, rose para oposição
-- Responsivo (mobile e desktop)
-- Modo claro (como no código original)
-- Feedback visual durante processamento (spinners por card e global)
+**Arquivos novos:** `src/components/BrazilMap.tsx`
+**Arquivos editados:** `src/App.tsx`, `src/components/Navbar.tsx`, `src/pages/Index.tsx`
+**Sem mudanças no banco de dados.**
 
