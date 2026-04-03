@@ -15,6 +15,7 @@ import { DeputyCard } from "@/components/DeputyCard";
 import { RankingTable } from "@/components/RankingTable";
 import { PartyChart } from "@/components/PartyChart";
 import { InsightsPanel } from "@/components/InsightsPanel";
+import { BrazilMap } from "@/components/BrazilMap";
 import { SyncLogPanel } from "@/components/SyncLogPanel";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
