@@ -7,6 +7,7 @@ import {
   BarChart2,
   Trophy,
   TrendingUp,
+  Map,
 } from "lucide-react";
 import { Navbar } from "@/components/Navbar";
 import { StatsPanel } from "@/components/StatsPanel";
