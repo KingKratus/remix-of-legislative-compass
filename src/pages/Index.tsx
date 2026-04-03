@@ -121,6 +121,9 @@ const Index = () => {
               <TabsTrigger value="insights" className="gap-2">
                 <TrendingUp size={14} /> Insights
               </TabsTrigger>
+              <TabsTrigger value="mapa" className="gap-2">
+                <Map size={14} /> Mapa
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="deputados" className="space-y-4 mt-4">
