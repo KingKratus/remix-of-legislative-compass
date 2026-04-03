@@ -1,4 +1,5 @@
-import { ShieldCheck, Search, RefreshCcw, LogIn, LogOut, User, MapPin } from "lucide-react";
+import { ShieldCheck, Search, RefreshCcw, LogIn, LogOut, User, Moon, Sun } from "lucide-react";
+import { useTheme } from "next-themes";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
