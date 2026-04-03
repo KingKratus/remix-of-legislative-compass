@@ -177,6 +177,10 @@ const Index = () => {
             <TabsContent value="insights" className="mt-4">
               <InsightsPanel />
             </TabsContent>
+
+            <TabsContent value="mapa" className="mt-4">
+              <BrazilMap analises={analises} />
+            </TabsContent>
           </Tabs>
         </section>
       </main>
