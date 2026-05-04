@@ -38,15 +38,30 @@ const ANOS = [2026, 2025, 2024, 2023, 2022, 2021, 2020, 2019];
 
 export default function DeputyDetail() {
   const { id } = useParams<{ id: string }>();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const deputadoId = Number(id) || 0;
-  const ano = Number(searchParams.get("ano")) || 2025;
+  const ano = Number(searchParams.get("ano")) || new Date().getFullYear();
 
   const [analise, setAnalise] = useState<Analise | null>(null);
   const [loadingAnalise, setLoadingAnalise] = useState(true);
+  const [availableYears, setAvailableYears] = useState<number[]>([]);
 
   const { votes, loading: loadingVotes, error, fetchVotes } = useDeputyVotes(deputadoId, ano);
+
+  // Load list of years that have data for this deputy
+  useEffect(() => {
+    async function loadYears() {
+      if (!deputadoId) return;
+      const { data } = await supabase
+        .from("analises_deputados")
+        .select("ano")
+        .eq("deputado_id", deputadoId)
+        .order("ano", { ascending: false });
+      setAvailableYears((data || []).map((d) => d.ano));
+    }
+    loadYears();
+  }, [deputadoId]);
 
   useEffect(() => {
     async function load() {
@@ -64,6 +79,12 @@ export default function DeputyDetail() {
     load();
     fetchVotes();
   }, [deputadoId, ano, fetchVotes]);
+
+  const changeYear = (newAno: number) => {
+    setSearchParams({ ano: String(newAno) });
+  };
+
+  const yearsToShow = availableYears.length > 0 ? availableYears : ANOS;
 
   const stats = useMemo(() => {
     const aligned = votes.filter((v) => v.alinhado).length;
