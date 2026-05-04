@@ -19,7 +19,7 @@ import { BrazilMap } from "@/components/BrazilMap";
 import { SyncLogPanel } from "@/components/SyncLogPanel";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useDeputados } from "@/hooks/useDeputados";
+import { useDeputados, type Deputado } from "@/hooks/useDeputados";
 import { useAnalises } from "@/hooks/useAnalises";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
@@ -54,7 +54,7 @@ const Index = () => {
 
   // Merge active deputies (API) with historical ones from analises for the selected year
   const allDeputies = useMemo(() => {
-    const byId = new Map<number, typeof deputados[0]>();
+    const byId = new Map<number, Deputado>();
     deputados.forEach((d) => byId.set(d.id, d));
     analises.forEach((a) => {
       if (!byId.has(a.deputado_id)) {
