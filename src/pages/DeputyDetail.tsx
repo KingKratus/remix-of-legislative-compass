@@ -148,34 +148,97 @@ export default function DeputyDetail() {
       </header>
 
       <main className="max-w-4xl mx-auto p-4 space-y-4">
-        {/* Stats summary */}
-        {analise && (
-          <Card className="p-4">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
-                Alinhamento {ano}
-              </span>
-              <span className="text-xs text-muted-foreground">
-                {analise.total_votos} votos úteis
+        {/* Snapshot do ano + Year Switcher */}
+        <Card className="p-4 border-2 border-primary/20">
+          <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
+            <div className="flex items-center gap-2">
+              <Calendar size={16} className="text-primary" />
+              <span className="text-sm font-black uppercase tracking-wider text-foreground">
+                Snapshot {ano}
               </span>
             </div>
-            <Progress value={Number(analise.score)} className="h-3 mb-3" />
-            <div className="grid grid-cols-3 gap-3 text-center">
-              <div className="bg-governo/10 rounded-lg p-2">
-                <div className="text-lg font-black text-governo">{stats.aligned}</div>
-                <div className="text-[10px] font-bold text-governo uppercase">Alinhados</div>
-              </div>
-              <div className="bg-oposicao/10 rounded-lg p-2">
-                <div className="text-lg font-black text-oposicao">{stats.opposed}</div>
-                <div className="text-[10px] font-bold text-oposicao uppercase">Contrários</div>
-              </div>
-              <div className="bg-muted rounded-lg p-2">
-                <div className="text-lg font-black text-muted-foreground">{stats.other}</div>
-                <div className="text-[10px] font-bold text-muted-foreground uppercase">Outros</div>
-              </div>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                Alternar ano:
+              </span>
+              <Select value={String(ano)} onValueChange={(v) => changeYear(Number(v))}>
+                <SelectTrigger className="w-24 h-8">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {yearsToShow.map((y) => (
+                    <SelectItem key={y} value={String(y)}>
+                      {y}
+                      {availableYears.includes(y) ? "" : " (sem dados)"}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-          </Card>
-        )}
+          </div>
+
+          {analise ? (
+            <>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                <div className="bg-muted/50 rounded-lg p-3">
+                  <div className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider mb-1">
+                    Partido
+                  </div>
+                  <div className="text-base font-black text-primary">
+                    {analise.deputado_partido || "—"}
+                  </div>
+                </div>
+                <div className="bg-muted/50 rounded-lg p-3">
+                  <div className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider mb-1">
+                    UF
+                  </div>
+                  <div className="text-base font-black text-foreground">
+                    {analise.deputado_uf || "—"}
+                  </div>
+                </div>
+                <div className="bg-muted/50 rounded-lg p-3">
+                  <div className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider mb-1">
+                    Score
+                  </div>
+                  <div className="text-base font-black text-foreground">
+                    {Number(analise.score).toFixed(1)}%
+                  </div>
+                </div>
+                <div className="bg-muted/50 rounded-lg p-3">
+                  <div className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider mb-1">
+                    Votos úteis
+                  </div>
+                  <div className="text-base font-black text-foreground">
+                    {analise.total_votos}
+                  </div>
+                </div>
+              </div>
+
+              <Progress value={Number(analise.score)} className="h-3 mb-3" />
+              <div className="grid grid-cols-3 gap-3 text-center">
+                <div className="bg-governo/10 rounded-lg p-2">
+                  <div className="text-lg font-black text-governo">{stats.aligned}</div>
+                  <div className="text-[10px] font-bold text-governo uppercase">Alinhados</div>
+                </div>
+                <div className="bg-oposicao/10 rounded-lg p-2">
+                  <div className="text-lg font-black text-oposicao">{stats.opposed}</div>
+                  <div className="text-[10px] font-bold text-oposicao uppercase">Contrários</div>
+                </div>
+                <div className="bg-muted rounded-lg p-2">
+                  <div className="text-lg font-black text-muted-foreground">{stats.other}</div>
+                  <div className="text-[10px] font-bold text-muted-foreground uppercase">Outros</div>
+                </div>
+              </div>
+            </>
+          ) : (
+            <div className="text-center py-6 text-sm text-muted-foreground">
+              Sem dados de análise para {ano}.
+              {availableYears.length > 0 && (
+                <span> Tente: {availableYears.slice(0, 5).join(", ")}.</span>
+              )}
+            </div>
+          )}
+        </Card>
 
         {/* Alignment Evolution Chart */}
         {votes.length >= 2 && <AlignmentChart votes={votes} />}
