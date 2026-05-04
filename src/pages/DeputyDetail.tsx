@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import {
   ArrowLeft,
@@ -7,15 +7,22 @@ import {
   MinusCircle,
   Loader2,
   AlertTriangle,
+  Calendar,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useDeputyVotes } from "@/hooks/useDeputyVotes";
 import { AlignmentChart } from "@/components/AlignmentChart";
 import { supabase } from "@/integrations/supabase/client";
-import { useState } from "react";
 import type { Tables } from "@/integrations/supabase/types";
 
 type Analise = Tables<"analises_deputados">;
@@ -26,6 +33,8 @@ const classColors: Record<string, string> = {
   Oposição: "bg-oposicao text-oposicao-foreground",
   "Sem Dados": "bg-muted text-muted-foreground",
 };
+
+const ANOS = [2026, 2025, 2024, 2023, 2022, 2021, 2020, 2019];
 
 export default function DeputyDetail() {
   const { id } = useParams<{ id: string }>();
