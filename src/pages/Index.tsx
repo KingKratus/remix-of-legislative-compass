@@ -52,15 +52,50 @@ const Index = () => {
     return map;
   }, [analises]);
 
+  // Merge active deputies (API) with historical ones from analises for the selected year
+  const allDeputies = useMemo(() => {
+    const byId = new Map<number, typeof deputados[0]>();
+    deputados.forEach((d) => byId.set(d.id, d));
+    analises.forEach((a) => {
+      if (!byId.has(a.deputado_id)) {
+        byId.set(a.deputado_id, {
+          id: a.deputado_id,
+          nome: a.deputado_nome,
+          siglaPartido: a.deputado_partido ?? "",
+          siglaUf: a.deputado_uf ?? "",
+          urlFoto: a.deputado_foto ?? "",
+        });
+      }
+    });
+    return Array.from(byId.values());
+  }, [deputados, analises]);
+
+  // Build party list dynamically from analises of selected year (+ active list for current year)
+  const partidosDisponiveis = useMemo(() => {
+    const siglas = new Set<string>();
+    analises.forEach((a) => { if (a.deputado_partido) siglas.add(a.deputado_partido); });
+    const isCurrentYear = ano === new Date().getFullYear();
+    if (isCurrentYear || siglas.size === 0) {
+      partidos.forEach((p) => siglas.add(p.sigla));
+    }
+    return Array.from(siglas)
+      .sort((a, b) => a.localeCompare(b))
+      .map((sigla, idx) => ({ id: idx, sigla, nome: sigla }));
+  }, [analises, partidos, ano]);
+
   const filteredDeputies = useMemo(() => {
-    return deputados.filter((d) => {
-      const matchName = d.nome.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchParty = partyFilter === "all" || d.siglaPartido === partyFilter;
-      const matchClass = classFilter === "all" || analiseMap[d.id]?.classificacao === classFilter;
-      const matchRegion = regionFilter === "all" || getRegiao(d.siglaUf) === regionFilter;
+    return allDeputies.filter((d) => {
+      const a = analiseMap[d.id];
+      const partidoAtual = a?.deputado_partido ?? d.siglaPartido;
+      const ufAtual = a?.deputado_uf ?? d.siglaUf;
+      const matchName = d.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (a?.deputado_nome?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false);
+      const matchParty = partyFilter === "all" || partidoAtual === partyFilter;
+      const matchClass = classFilter === "all" || a?.classificacao === classFilter;
+      const matchRegion = regionFilter === "all" || getRegiao(ufAtual) === regionFilter;
       return matchName && matchParty && matchClass && matchRegion;
     });
-  }, [deputados, searchTerm, partyFilter, classFilter, regionFilter, analiseMap]);
+  }, [allDeputies, searchTerm, partyFilter, classFilter, regionFilter, analiseMap]);
 
   return (
     <div className="min-h-screen bg-background text-foreground">
