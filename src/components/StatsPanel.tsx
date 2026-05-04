@@ -21,6 +21,7 @@ interface StatsPanelProps {
   syncing: boolean;
   syncProgress: SyncProgress | null;
   onSync: () => void;
+  ano: number;
 }
 
 function StatItem({
