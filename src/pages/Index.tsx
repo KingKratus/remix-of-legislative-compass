@@ -126,6 +126,7 @@ const Index = () => {
             syncing={syncing}
             syncProgress={syncProgress}
             onSync={() => syncDeputados(30)}
+            ano={ano}
           />
           <SyncLogPanel />
           {user && (
