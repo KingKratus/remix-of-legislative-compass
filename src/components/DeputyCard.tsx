@@ -38,11 +38,17 @@ const classBadgeColors: Record<string, string> = {
 export function DeputyCard({ deputado, analise, onClick, isFavorite, onToggleFavorite }: DeputyCardProps) {
   const navigate = useNavigate();
 
+  // Use historical data from analise (per-year snapshot) when available
+  const displayNome = analise?.deputado_nome ?? deputado.nome;
+  const displayPartido = analise?.deputado_partido ?? deputado.siglaPartido;
+  const displayUf = analise?.deputado_uf ?? deputado.siglaUf;
+  const displayFoto = analise?.deputado_foto || deputado.urlFoto;
+
   const handleClick = () => {
     if (onClick) {
       onClick();
     } else {
-      navigate(`/deputado/${deputado.id}?ano=${analise?.ano || 2025}`);
+      navigate(`/deputado/${deputado.id}?ano=${analise?.ano || new Date().getFullYear()}`);
     }
   };
 
@@ -56,8 +62,8 @@ export function DeputyCard({ deputado, analise, onClick, isFavorite, onToggleFav
       <div className="flex items-center gap-3">
         <div className="relative shrink-0">
           <img
-            src={deputado.urlFoto}
-            alt={deputado.nome}
+            src={displayFoto}
+            alt={displayNome}
             className="w-12 h-12 rounded-xl object-cover shadow-sm grayscale group-hover:grayscale-0 transition-all border-2 border-card"
             onError={(e) => {
               (e.target as HTMLImageElement).src =
@@ -77,14 +83,14 @@ export function DeputyCard({ deputado, analise, onClick, isFavorite, onToggleFav
 
         <div className="flex-1 min-w-0">
           <h4 className="text-sm font-bold text-foreground truncate leading-tight">
-            {deputado.nome}
+            {displayNome}
           </h4>
           <div className="flex items-center gap-2 mt-1">
             <span className="text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-md">
-              {deputado.siglaPartido}
+              {displayPartido}
             </span>
             <span className="text-[10px] font-medium text-muted-foreground">
-              {deputado.siglaUf}
+              {displayUf}
             </span>
           </div>
         </div>

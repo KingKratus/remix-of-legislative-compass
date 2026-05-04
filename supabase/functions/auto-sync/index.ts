@@ -221,7 +221,7 @@ Deno.serve(async (req) => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const years = [2023, 2024, 2025, 2026];
+    const years = [2019, 2020, 2021, 2022, 2023, 2024, 2025, 2026];
     console.log(`[auto-sync] Full sync starting for years: ${years.join(", ")}`);
 
     const results: Record<number, { deputies: number; votacoes: number }> = {};
