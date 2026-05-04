@@ -110,7 +110,7 @@ const Index = () => {
         onClassFilterChange={setClassFilter}
         regionFilter={regionFilter}
         onRegionFilterChange={setRegionFilter}
-        partidos={partidos}
+        partidos={partidosDisponiveis}
         loading={depLoading || analLoading}
         onRefresh={refetch}
         user={user}
