@@ -21,6 +21,7 @@ interface StatsPanelProps {
   syncing: boolean;
   syncProgress: SyncProgress | null;
   onSync: () => void;
+  ano: number;
 }
 
 function StatItem({
@@ -53,6 +54,7 @@ export function StatsPanel({
   syncing,
   syncProgress,
   onSync,
+  ano,
 }: StatsPanelProps) {
   const counts = { Governo: 0, Centro: 0, Oposição: 0, "Sem Dados": 0 };
   analises.forEach((a) => {
@@ -122,9 +124,9 @@ export function StatsPanel({
             )}
             {syncing
               ? syncProgress
-                ? `Processando ${syncProgress.processed}/${syncProgress.total} votações (${syncProgress.percent}%)`
+                ? `Processando ${syncProgress.processed}/${syncProgress.total} (${syncProgress.percent}%)`
                 : "Iniciando..."
-              : "Sincronizar via Backend"}
+              : `Recalcular análises de ${ano}`}
           </Button>
           {syncing && syncProgress && syncProgress.total > 0 && (
             <Progress value={syncProgress.percent} className="h-1.5 mt-2" />

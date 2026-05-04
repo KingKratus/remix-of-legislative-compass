@@ -126,17 +126,27 @@ const Index = () => {
             syncing={syncing}
             syncProgress={syncProgress}
             onSync={() => syncDeputados(30)}
+            ano={ano}
           />
           <SyncLogPanel />
           {user && (
             <Button
               variant="outline"
               className="w-full"
-              onClick={() => exportAnalisesCsv(analises, ano)}
-              disabled={analises.length === 0}
+              onClick={() => {
+                const ids = new Set(filteredDeputies.map((d) => d.id));
+                const filteredAnalises = analises.filter((a) => ids.has(a.deputado_id));
+                exportAnalisesCsv(filteredAnalises, ano, {
+                  partido: partyFilter,
+                  classificacao: classFilter,
+                  regiao: regionFilter,
+                });
+              }}
+              disabled={filteredDeputies.length === 0}
+              title="Exporta os deputados visíveis com os filtros atuais"
             >
               <Download size={14} className="mr-2" />
-              Exportar CSV
+              Exportar CSV ({filteredDeputies.length})
             </Button>
           )}
         </aside>
