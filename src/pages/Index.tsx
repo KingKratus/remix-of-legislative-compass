@@ -7,7 +7,7 @@ import {
   BarChart2,
   Trophy,
   TrendingUp,
-  Map,
+  Map as MapIcon,
 } from "lucide-react";
 import { Navbar } from "@/components/Navbar";
 import { StatsPanel } from "@/components/StatsPanel";
@@ -157,7 +157,7 @@ const Index = () => {
                 <TrendingUp size={14} /> Insights
               </TabsTrigger>
               <TabsTrigger value="mapa" className="gap-2">
-                <Map size={14} /> Mapa
+                <MapIcon size={14} /> Mapa
               </TabsTrigger>
             </TabsList>
 
